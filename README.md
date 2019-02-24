@@ -1,7 +1,7 @@
 # helper_scripts
 
 - 產生身分證
-- 自動打開58btv的全部先鋒連結
+- 打開58btv的全部先鋒連結
 - Google翻譯RWD(deprecated)
 
 ## Tampermonkey
