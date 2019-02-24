@@ -2,7 +2,7 @@
 // @name         auto_click_xfplayer
 // @namespace    http://tampermonkey.net/
 // @version      0.3
-// @description  58b先鋒連結打開自動開應用程式並關閉分頁
+// @description  58btv先鋒連結自動打開應用程式並關閉分頁
 // @author       Long
 // @match        https://www.58b.tv/*
 // @grant        none
