@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         open_all_xfplay
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  打開全部先鋒連結
 // @author       Long
 // @include      https://www.58b.tv/vod-read-id-*
@@ -12,9 +12,10 @@
 var $ = window.jQuery;
 $('<div id="open_all_xfplay">下載先鋒<br>(全部)</div>').appendTo('body');
 $('#open_all_xfplay').css({
-	"position": "fixed",
+    "position": "fixed",
     "right": "0",
     "top": "50%",
+    "transform": "translateY(-50%)",
     "background-color": "rgb(24, 194, 200)",
     "padding": "10px",
     "font-size": "1.2rem",
