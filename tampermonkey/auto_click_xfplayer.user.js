@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         auto_click_xfplayer
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  58btv先鋒連結自動打開應用程式並關閉分頁
 // @author       Long
 // @match        https://www.58b.tv/vod-play-id-*
