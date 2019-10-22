@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         open_all_xfplay
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  打開全部先鋒連結
+// @version      0.3
+// @description  在58b.tv，於影片連結右側，增加一個按鈕可以打開全部先鋒連結
 // @author       Long
 // @include      https://www.58b.tv/vod-read-id-*
 // @grant        none
