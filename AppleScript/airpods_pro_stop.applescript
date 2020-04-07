@@ -6,6 +6,9 @@ tell application "System Events"
 	end tell
 end tell
 
-tell application "Music"
-	pause
-end tell
+if application "Music" is running then
+    tell application "Music" to pause
+end if
+if application "Spotify" is running then
+    tell application "Spotify" to pause
+end if

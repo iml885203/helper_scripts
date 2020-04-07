@@ -1,6 +1,9 @@
-tell application "Music"
-	play
-end tell
+if application "Music" is running then
+    tell application "Music" to play
+end if
+if application "Spotify" is running then
+    tell application "Spotify" to play
+end if
 
 tell application "System Events"
 	tell process "SystemUIServer"
