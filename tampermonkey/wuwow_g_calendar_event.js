@@ -44,7 +44,7 @@
       let date = $dateEle.data("date");
       let time = $ele.text().trim();
       let datetime = moment(`${date} ${time}`);
-      let title = `ENG ${time}`;
+      let title = `👩🏼‍🏫 ${time}`;
       let queryString = $.param({
         action: "TEMPLATE",
         ctz: "Asia/Taipei",
