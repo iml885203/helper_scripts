@@ -67,6 +67,8 @@
                     "message": "GoogleMeetLinkStatus腳本執行中"
                 }),
             });
+            event.preventDefault();
+            event.returnValue = 'Don\'t go';
         });
     }
 })();
