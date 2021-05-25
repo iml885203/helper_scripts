@@ -10,7 +10,10 @@
 // @require      http://code.jquery.com/jquery-3.4.1.min.js
 // ==/UserScript==
 
-
+/**
+ * Get your Rocket Chat Auth Token and UserID
+ * https://developer.rocket.chat/api/rest-api/personal-access-tokens
+ */
 (function() {
     'use strict';
 
