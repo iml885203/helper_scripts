@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Twitch Auto Theatre
 // @namespace    http://tampermonkey.net/
-// @version      0.
+// @version      0.3
 // @description  auto click theatre mode button
 // @author       Long
 // @match        https://www.twitch.tv/*
