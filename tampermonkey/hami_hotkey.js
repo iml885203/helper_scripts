@@ -64,6 +64,7 @@
         toggleFullscreen();
       }
     });
+    $video.focus();
     console.log("[Hami Hotkey] hotkey loaded.", $video);
   };
 
