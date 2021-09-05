@@ -2,7 +2,7 @@
 // @name               Hami Hoykey
 // @name:zh-TW         Hami 快捷鍵
 // @namespace          http://tampermonkey.net/
-// @version            0.5
+// @version            0.6
 // @description        add hotkey for HamiVideo. f=fullscreen, Left/Right=TimeControl, space=play/pause, shift+>=speedup, shift+<=speeddown
 // @description:zh-tw  幫HamiVideo增加快捷鍵, f=全螢幕, Left/Right=時間控制, space=開始/暫停, shift+>=加速, shift+<=減速
 // @author             Long
@@ -14,32 +14,28 @@
 (function () {
   "use strict";
 
-  function toggleFullscreen() {
-    let $fullScreenEle = document.getElementById('h5video');
-    if(!$fullScreenEle) {
-      console.warn('[Hami Hotkey] fullscreen element not found.');
-      return;
+  function isNumeric(str) {
+    if (typeof str != "string") return false // we only process strings!  
+    return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+           !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+  }
+
+  function getPlaybackRate() {
+    let videoId = window.location.href.split('/')[4];
+    if(isNumeric(videoId) && sessionStorage) {
+      return sessionStorage.getItem(`hamihotkey_playbackrate_${videoId}`);
     }
-    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) { // current working methods
-      if ($fullScreenEle.requestFullscreen) {
-        $fullScreenEle.requestFullscreen();
-      } else if ($fullScreenEle.msRequestFullscreen) {
-        $fullScreenEle.msRequestFullscreen();
-      } else if ($fullScreenEle.mozRequestFullScreen) {
-        $fullScreenEle.mozRequestFullScreen();
-      } else if ($fullScreenEle.webkitRequestFullscreen) {
-        $fullScreenEle.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      }
+    return null;
+  }
+
+  function setPlaybackRate($video, rate) {
+    let maxRate = 2;
+    let minRate = 0.75;
+    rate = Math.min(maxRate, Math.max(minRate, rate));
+    $video.playbackRate = rate;
+    let videoId = window.location.href.split('/')[4];
+    if(isNumeric(videoId) && sessionStorage) {
+      sessionStorage.setItem(`hamihotkey_playbackrate_${videoId}`, rate);
     }
   }
 
@@ -57,13 +53,22 @@
           $video.pause();
         }
       } else if (e.shiftKey && e.key === '<') {
-        $video.playbackRate = Math.max(0.75, $video.playbackRate - 0.25);
+        setPlaybackRate($video, $video.playbackRate - 0.25);
       } else if (e.shiftKey && e.key === '>') {
-        $video.playbackRate = Math.min(2, $video.playbackRate + 0.25);
+        setPlaybackRate($video, $video.playbackRate + 0.25);
       } else if(e.key === 'f' || e.key === 'F') {
-        toggleFullscreen();
+        document.querySelector('.vjs-fullscreen-control').click();
       }
     });
+
+    let cachePlaybackRate = getPlaybackRate();
+    if(cachePlaybackRate) {
+      window.setTimeout(function() {
+        $video.playbackRate = cachePlaybackRate;
+      }, 0);
+      console.log("[Hami Hotkey] set cache PlaybackRate to:", cachePlaybackRate);
+    }
+    
     $video.focus();
     console.log("[Hami Hotkey] hotkey loaded.", $video);
   };
