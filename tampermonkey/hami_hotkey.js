@@ -2,7 +2,7 @@
 // @name               Hami Hoykey
 // @name:zh-TW         Hami 快捷鍵
 // @namespace          http://tampermonkey.net/
-// @version            0.2
+// @version            0.3
 // @description        add hotkey for HamiVideo. f=fullscreen, Left/Right=TimeControl, space=play/pause, shift+>=speedup, shift+<=speeddown
 // @description:zh-tw  幫HamiVideo增加快捷鍵, f=全螢幕, Left/Right=時間控制, space=開始/暫停, shift+>=加速, shift+<=減速
 // @author             Long
@@ -64,7 +64,7 @@
             $video.playbackRate = Math.max(0.75, $video.playbackRate - 0.25);
           } else if (e.shiftKey && e.key === '>') {
             $video.playbackRate = Math.min(2, $video.playbackRate + 0.25);
-          } else if(e.key === 'f') {
+          } else if(e.key === 'f' || e.key === 'F') {
             toggleFullscreen();
           }
         });
