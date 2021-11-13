@@ -2,9 +2,9 @@
 // @name               Twitch Auto Channel Points
 // @name:zh-TW         Twitch 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            1.3
+// @version            1.4
 // @description        auto get Channel Points
-// @description:zh-tw  自動獲得忠誠點數，其他人的腳本一直失靈，只好自己重寫一個
+// @description:zh-tw  自動獲得忠誠點數
 // @author             Long
 // @match              https://www.twitch.tv/*
 // @icon               https://www.google.com/s2/favicons?domain=twitch.tv
