@@ -87,7 +87,7 @@
 
 
   let getPoints = function() {
-    console.debug('[Twitch-Auto-Channel-Points] get points');
+    // console.debug('[Twitch-Auto-Channel-Points] get points');
     let $pointsSummaryButtons = document.querySelectorAll('[data-test-selector="community-points-summary"] button');
     let canGetPoints = $pointsSummaryButtons.length > 1;
     if(canGetPoints) {
@@ -124,7 +124,7 @@
   };
 
   let findButtonInterval = setInterval(function () {
-    console.debug('[Twitch-Auto-Channel-Points] find button...');
+    // console.debug('[Twitch-Auto-Channel-Points] find button...');
     let $pointButton = document.querySelector('[data-test-selector="community-points-summary"] button');
     if ($pointButton) {
       setInterval(getPoints, getPointsLoop);
