@@ -2,7 +2,7 @@
 // @name               Twitch Auto Channel Points
 // @name:zh-TW         Twitch 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            1.0
+// @version            1.1
 // @description        auto get Channel Points
 // @description:zh-tw  自動獲得忠誠點數
 // @author             Long
