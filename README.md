@@ -13,3 +13,6 @@ https://mrcoles.com/bookmarklet/
 - [Airpords Pro開啟通透模式 & 暫停音樂](https://github.com/iml885203/helper_scripts/blob/master/AppleScript/airpods_pro_stop.applescript)
 
 建議搭配 [BetterTouchTool](https://folivora.ai/) 綁定快捷鍵使用
+
+## Tampermonkey
+Scripts已上傳到[Greasyfork](https://greasyfork.org/zh-TW/users/249639-iml885203)
