@@ -14,42 +14,27 @@
 (function () {
   "use strict";
 
-  // method 1
-  // window.onload = function() {
-  //   var twitchAutoTheatreIntervalRetry = 100;
-  //   var twitchAutoTheatreInterval = setInterval(function () {
-  //     let $theatreModeButton = document.querySelector('[data-a-target="player-theatre-mode-button"]');
-  //     // console.log($theatreModeButton);
-  //     if ($theatreModeButton) {
-  //       $theatreModeButton.click();
-  //       clearInterval(twitchAutoTheatreInterval);
-  //       console.log("[Twitch-Auto-Theatre] theatre-mode-button clicked.");
-  //     } else if (!twitchAutoTheatreIntervalRetry) {
-  //       clearInterval(twitchAutoTheatreInterval);
-  //       console.warn("[Twitch-Auto-Theatre] theatre-mode-button not found.");
-  //     }
-  //     twitchAutoTheatreIntervalRetry--;
-  //   }, 500);
-  // };
-
-  // method 2
-  let observer = new MutationObserver(mutations => {
-    for(let mutation of mutations) {
-      let node = mutation.target;
-      if (node.matches('.player-controls__right-control-group')) {
-        observer.disconnect();
-        let $theatreModeButton = document.querySelector('[data-a-target="player-theatre-mode-button"]');
-        if ($theatreModeButton) {
-          $theatreModeButton.click();
-          console.log("[Twitch-Auto-Theatre] theatre-mode-button clicked.");
-        } else {
-          console.warn("[Twitch-Auto-Theatre] control-group found. but button not found.")
-        }
+  window.onload = function() {
+    let twitchAutoTheatreIntervalRetry = 300;
+    const twitchAutoTheatreInterval = setInterval(function () {
+      const isEnabled = document.querySelector('.persistent-player').classList.contains('persistent-player--theatre')
+      if (isEnabled) {
+        clearInterval(twitchAutoTheatreInterval);
+        console.warn("[Twitch-Auto-Theatre] theatre-mode enabled.");
       }
-    }
-  });
-  observer.observe(document.getElementById('root'), {
-    childList: true,
-    subtree: true,
-  });
+
+      if (!twitchAutoTheatreIntervalRetry) {
+        clearInterval(twitchAutoTheatreInterval);
+        console.warn("[Twitch-Auto-Theatre] theatre-mode-button not found.");
+      }
+
+      const $theatreModeButton = document.querySelector('[data-a-target="player-theatre-mode-button"]')
+      if ($theatreModeButton) {
+        $theatreModeButton.click();
+        clearInterval(twitchAutoTheatreInterval);
+        console.log("[Twitch-Auto-Theatre] theatre-mode-button clicked.");
+      }
+      twitchAutoTheatreIntervalRetry--;
+    }, 500);
+  };
 })();
