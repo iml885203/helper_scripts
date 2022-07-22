@@ -2,7 +2,7 @@
 // @name               Twitch Auto Theatre
 // @name:zh-TW         Twitch 自動劇院模式
 // @namespace          http://tampermonkey.net/
-// @version            1.0
+// @version            1.0.1
 // @description        auto click theatre mode button
 // @description:zh-tw  進入頁面自動啟動劇院模式
 // @author             Long
@@ -12,29 +12,30 @@
 // ==/UserScript==
 
 (function () {
-  "use strict";
+  "use strict"
 
   window.onload = function() {
-    let twitchAutoTheatreIntervalRetry = 300;
+    let twitchAutoTheatreIntervalRetry = 300
     const twitchAutoTheatreInterval = setInterval(function () {
       const isEnabled = document.querySelector('.persistent-player').classList.contains('persistent-player--theatre')
       if (isEnabled) {
-        clearInterval(twitchAutoTheatreInterval);
-        console.warn("[Twitch-Auto-Theatre] theatre-mode enabled.");
+        clearInterval(twitchAutoTheatreInterval)
+        console.log("[Twitch-Auto-Theatre] theatre-mode enabled.")
+        return
       }
 
       if (!twitchAutoTheatreIntervalRetry) {
-        clearInterval(twitchAutoTheatreInterval);
-        console.warn("[Twitch-Auto-Theatre] theatre-mode-button not found.");
+        clearInterval(twitchAutoTheatreInterval)
+        console.warn("[Twitch-Auto-Theatre] theatre-mode-button not found.")
+        return
       }
 
       const $theatreModeButton = document.querySelector('[data-a-target="player-theatre-mode-button"]')
       if ($theatreModeButton) {
-        $theatreModeButton.click();
-        clearInterval(twitchAutoTheatreInterval);
-        console.log("[Twitch-Auto-Theatre] theatre-mode-button clicked.");
+        $theatreModeButton.click()
+        console.log("[Twitch-Auto-Theatre] theatre-mode-button clicked.")
       }
-      twitchAutoTheatreIntervalRetry--;
-    }, 500);
-  };
-})();
+      twitchAutoTheatreIntervalRetry--
+    }, 500)
+  }
+})()
