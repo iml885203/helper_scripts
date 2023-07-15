@@ -16,7 +16,7 @@ tell application "Music"
 	play playlist "BGM"
 
 	# Set volume
-	set sound volume to 5
+	set sound volume to 4
 
 	# Enable repeat
 	if (song repeat = off) or (song repeat = all) then
