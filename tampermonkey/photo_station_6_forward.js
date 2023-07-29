@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Photo Station 6 影片快轉
 // @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Control Video forward/backward for Photo Station 6. Forward hotkey: "[", Backword hotkey: "]"
+// @version      0.3
+// @description  Control Video forward/backward for Photo Station 6. Backword hotkey: "[", Forward hotkey: "]"
 // @author       You
 // @match        http://twmedia.coreop.net/photo/
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=coreop.net
