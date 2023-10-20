@@ -8,7 +8,7 @@
 # Optional parameters:
 # @raycast.icon 🖥️
 
-# Documentation:
+# Documentation: Need to add shotcut cmd + opt + t for cast on Arc browser
 # @raycast.author Logan
 
 tell application "Arc"
