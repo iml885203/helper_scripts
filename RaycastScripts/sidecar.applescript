@@ -2,13 +2,13 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title SideCar
+# @raycast.title Sidecar
 # @raycast.mode silent
 
 # Optional parameters:
 # @raycast.icon 💻
 
-# Documentation: Toggle sidecar
+# Documentation: Toggle Sidecar
 # @raycast.author Logan
 
 tell application "System Events"
@@ -32,4 +32,4 @@ tell application "System Events"
 		end tell
 	end tell
 end tell
-
+log "Toggle Sidecar"
