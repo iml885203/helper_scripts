@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name               Twitch Auto Theatre
-// @name:zh-TW         Twitch 自動劇院模式
+// @name               🔥 Twitch - Auto Theatre
+// @name:zh-TW         🔥 Twitch - 自動劇院模式
 // @namespace          http://tampermonkey.net/
-// @version            1.0.5
-// @description        auto click theatre mode button
+// @version            2024.4.0
+// @description        Automatically click theatre mode button
 // @description:zh-tw  進入頁面自動啟動劇院模式
 // @author             Long
 // @match              https://www.twitch.tv/*
