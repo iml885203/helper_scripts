@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name               Twitch Auto Channel Points
-// @name:zh-TW         Twitch 自動獲得忠誠點數
+// @name               🔥 Twitch - Auto Channel Points
+// @name:zh-TW         🔥 Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            1.5
-// @description        auto get Channel Points
+// @version            2024.4.0
+// @description        Automatically claim channel points
 // @description:zh-tw  自動獲得忠誠點數
 // @author             Long
 // @match              https://www.twitch.tv/*
