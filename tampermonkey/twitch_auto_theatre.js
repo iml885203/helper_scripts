@@ -67,8 +67,6 @@
 
     const handlePageChanged = () => {
         window.navigation.addEventListener("navigate", (event) => {
-            window.gg = event;
-            console.log('location changed!', event);
             const url = new URL(event.destination.url);
             if (window.autoTheatreInterval) stopAutoTheatreInterval();
             if (isPathIgnored(url.pathname)) return;
