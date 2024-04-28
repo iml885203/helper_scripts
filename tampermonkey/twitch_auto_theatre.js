@@ -2,7 +2,7 @@
 // @name               Twitch Auto Theatre
 // @name:zh-TW         Twitch 自動劇院模式
 // @namespace          http://tampermonkey.net/
-// @version            1.0.4
+// @version            1.0.5
 // @description        auto click theatre mode button
 // @description:zh-tw  進入頁面自動啟動劇院模式
 // @author             Long
@@ -60,23 +60,23 @@
         }, 500);
     }
 
-    const handlePageLoaded = () => {
-        if (isPathIgnored(location.pathname)) return;
+    const handlePageLoaded = (pathname) => {
+        if (isPathIgnored(pathname)) return;
         autoTheatre();
     }
 
     const handlePageChanged = () => {
         window.navigation.addEventListener("navigate", (event) => {
+            stopAutoTheatreInterval();
+
             const url = new URL(event.destination.url);
-            if (window.autoTheatreInterval) stopAutoTheatreInterval();
-            if (isPathIgnored(url.pathname)) return;
-            autoTheatre();
+            handlePageLoaded(url.pathname);
         });
     }
 
     const main = () => {
+        handlePageLoaded(location.pathname);
         handlePageChanged();
-        handlePageLoaded();
     }
     main();
 })();
