@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name               🔥 Twitch - Auto Channel Points
-// @name:zh-TW         🔥 Twitch - 自動獲得忠誠點數
+// @name               Twitch - Auto Channel Points
+// @name:zh-TW         Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            2024.4.0
+// @version            2024.5.0
 // @description        Automatically claim channel points
 // @description:zh-tw  自動獲得忠誠點數
 // @author             Long
@@ -17,7 +17,7 @@
 
 (function () {
     "use strict";
-  
+
     GM_addStyle(`
       #total-got-points {
         display: inline-flex;
@@ -86,15 +86,15 @@
     // get points
     const getPointsLoop = 1000;
     const pointsOneTime = 50;
-    
+
     const startGetPointsLoop = () => {
         const GMkeyName = location.origin + location.pathname + ':auto-channel-points';
-        const totalGotPoints = GM_getValue(GMkeyName, 0);
+        let totalGotPoints = GM_getValue(GMkeyName, 0);
         showTotalGotPoints(totalGotPoints);
-        window.getPointLoop = setInterval(function() {
+        window.getPointLoop = setInterval(function () {
             const $pointsSummaryButtons = document.querySelectorAll('[data-test-selector="community-points-summary"] button');
             const canGetPoints = $pointsSummaryButtons.length > 1;
-            if(canGetPoints) {
+            if (canGetPoints) {
                 $pointsSummaryButtons[1].click();
                 $pointsSummaryButtons[1].remove();
                 totalGotPoints += pointsOneTime;
@@ -110,27 +110,32 @@
         window.getPointLoop = null;
     }
 
-    const showTotalGotPoints = function(totalGotPoints) {
-        const $totalGotPoints = document.querySelector('#total-got-points span');
-        if(!$totalGotPoints) {
-            const $totalGotPointsContainer = document.createElement('div');
-            $totalGotPointsContainer.id = 'total-got-points';
-            const $buttonDiv = document.querySelectorAll('.chat-input__buttons-container div')[0];
-            $buttonDiv.appendChild($totalGotPointsContainer);
-            const $pointImage = document.querySelector('.channel-points-icon__image');
-            if($pointImage) {
-                const pointName = $pointImage.alt;
-                $totalGotPointsContainer.style.setProperty('--point-name', '"自動領取' + pointName + '"');
-                $totalGotPointsContainer.appendChild($pointImage.cloneNode(true));
-            } else {
-                $totalGotPointsContainer
-                    .appendChild(document.querySelector('.chat-input__buttons-container button svg')
+    const appendGotPointsElement = () => {
+        const $totalGotPointsContainer = document.createElement('div');
+        $totalGotPointsContainer.id = 'total-got-points';
+        const $buttonDiv = document.querySelectorAll('.chat-input__buttons-container div')[0];
+        $buttonDiv.appendChild($totalGotPointsContainer);
+        const $pointImage = document.querySelector('.channel-points-icon__image');
+        if ($pointImage) {
+            const pointName = $pointImage.alt;
+            $totalGotPointsContainer.style.setProperty('--point-name', '"自動領取' + pointName + '"');
+            $totalGotPointsContainer.appendChild($pointImage.cloneNode(true));
+        } else {
+            $totalGotPointsContainer
+                .appendChild(document.querySelector('.chat-input__buttons-container button svg')
                     .cloneNode(true));
-            }
-            $totalGotPointsContainer.appendChild(document.createElement('span'));
-            $totalGotPoints = document.querySelector('#total-got-points span');
         }
-        $totalGotPoints.textContent = new Intl.NumberFormat().format(totalGotPoints);
+        $totalGotPointsContainer.appendChild(document.createElement('span'));
+
+        return document.querySelector('#total-got-points span');
+    };
+
+    const showTotalGotPoints = function (totalGotPoints) {
+        let $gotPointsEle = document.querySelector('#total-got-points span');
+        if (!$gotPointsEle) {
+            $gotPointsEle = appendGotPointsElement();
+        }
+        $gotPointsEle.textContent = new Intl.NumberFormat().format(totalGotPoints);
         console.log("[Twitch-Auto-Channel-Points] totalGotPoints: ", totalGotPoints);
     };
 
@@ -154,7 +159,7 @@
         clearInterval(window.findPointButtonLoop);
         window.findPointButtonLoop = null;
     }
-    
+
     const handlePageLoaded = (pathname) => {
         if (isPathIgnored(pathname)) return;
         startFindPointButtonLoop();
