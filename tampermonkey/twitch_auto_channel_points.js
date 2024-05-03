@@ -2,7 +2,7 @@
 // @name               Twitch - Auto Channel Points
 // @name:zh-TW         Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            2024.5.0
+// @version            2024.5.1
 // @description        Automatically claim channel points
 // @description:zh-tw  自動獲得忠誠點數
 // @author             Long
@@ -34,20 +34,20 @@
         height: var(--button-size-default);
         --point-name: '自動領取忠誠點數';
       }
-  
+
       #total-got-points:hover {
         background-color: var(--color-background-button-text-hover);
       }
-  
+
       #total-got-points img {
         height: 2rem;
         width: 2rem;
       }
-  
+
       #total-got-points img, #total-got-points svg {
         margin-right: 5px;
       }
-  
+
       #total-got-points::before{
         content: var(--point-name);
         user-select: none;
@@ -70,7 +70,7 @@
         transition: all .2s ease-in-out;
         opacity: 0;
       }
-  
+
       #total-got-points:hover::before{
         opacity: 1;
       }
@@ -84,8 +84,10 @@
     // find button
     let findButtonRetry = 100;
     // get points
-    const getPointsLoop = 1000;
-    const pointsOneTime = 50;
+    const getPointsLoopMs = 1000;
+    const gotPointsRegex = /\+?(\d+)/;
+    let lastTimeGotPoints = null;
+    let needToUpdateGotPoints = false;
 
     const startGetPointsLoop = () => {
         const GMkeyName = location.origin + location.pathname + ':auto-channel-points';
@@ -94,15 +96,35 @@
         window.getPointLoop = setInterval(function () {
             const $pointsSummaryButtons = document.querySelectorAll('[data-test-selector="community-points-summary"] button');
             const canGetPoints = $pointsSummaryButtons.length > 1;
+            const $gotPointsEles = document.querySelectorAll('.pulse-animation');
+
             if (canGetPoints) {
                 $pointsSummaryButtons[1].click();
                 $pointsSummaryButtons[1].remove();
-                totalGotPoints += pointsOneTime;
-                GM_setValue(GMkeyName, totalGotPoints);
-                console.log("[Twitch-Auto-Channel-Points] Got points!!");
-                showTotalGotPoints(totalGotPoints);
+                console.log('[Twitch-Auto-Channel-Points] Getting points...');
+
+                needToUpdateGotPoints = true;
             }
-        }, getPointsLoop);
+
+            if (needToUpdateGotPoints) {
+                $gotPointsEles.forEach(($gotPointsEle) => {
+                    const matches = $gotPointsEle.textContent.match(gotPointsRegex);
+                    if (!matches) return;
+
+                    lastTimeGotPoints = parseInt(matches[1]);
+                });
+
+                if (!lastTimeGotPoints) return;
+
+                totalGotPoints += lastTimeGotPoints;
+                GM_setValue(GMkeyName, totalGotPoints);
+                console.log("[Twitch-Auto-Channel-Points] Got points: ", lastTimeGotPoints);
+                showTotalGotPoints(totalGotPoints);
+
+                lastTimeGotPoints = null;
+                needToUpdateGotPoints = false;
+            }
+        }, getPointsLoopMs);
     }
     const stopGetPointsLoop = () => {
         if (!window.getPointLoop) return;
