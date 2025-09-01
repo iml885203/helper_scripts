@@ -11,7 +11,7 @@
 # Documentation:
 # @raycast.author Logan
 
-VPN_TARGET="G11-01 (Hi-Net)"
+VPN_TARGET="G11-01 (Hi-Net)b"
 VPN_STATUS=$(tunnelblickctl status | grep "$VPN_TARGET" | awk '{print $3}')
 
 if [ "$VPN_STATUS" = "CONNECTED" ]; then
