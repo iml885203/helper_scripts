@@ -2,9 +2,9 @@
 // @name               Twitch - Auto Channel Points
 // @name:zh-TW         Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            2026.11.1
+// @version            2026.11.2
 // @description        Automatically claim channel points
-// @description:zh-tw  自動獲得忠誠點數
+// @description:zh-TW  自動獲得忠誠點數
 // @author             Long
 // @match              https://www.twitch.tv/*
 // @icon               https://www.google.com/s2/favicons?domain=twitch.tv
@@ -15,212 +15,263 @@
 // @updateURL https://update.greasyfork.org/scripts/435447/Twitch%20Auto%20Channel%20Points.meta.js
 // ==/UserScript==
 
-(function () {
-    "use strict";
+(() => {
+    'use strict';
 
     const isChinese = /^zh\b/i.test(document.documentElement.lang || navigator.language);
     const locale = isChinese ? 'zh-TW' : 'en-US';
-    const fullFormatter = new Intl.NumberFormat(locale);
-    const compactFormatter = new Intl.NumberFormat(locale, {
+    const numberFormat = new Intl.NumberFormat(locale);
+    const compactFormat = new Intl.NumberFormat(locale, {
         notation: 'compact',
         maximumFractionDigits: 1,
         roundingMode: 'floor',
     });
+    const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' });
+    const strings = isChinese
+        ? {
+            title: '領取歷程', empty: '尚無領取紀錄', close: '關閉',
+            points: '忠誠點數', prefix: '自動領取',
+            total: (points) => `累計領取 ${numberFormat.format(points)} 點`,
+            unlisted: (points) => `有 ${numberFormat.format(points)} 點未列在下方歷程`,
+        }
+        : {
+            title: 'Claim history', empty: 'No claim history yet', close: 'Close',
+            points: 'Channel Points', prefix: 'Auto-claimed ',
+            total: (points) => `Total claimed: ${numberFormat.format(points)} ${points === 1 ? 'point' : 'points'}`,
+            unlisted: (points) => `${numberFormat.format(points)} ${points === 1 ? 'point isn’t' : 'points aren’t'} shown in the history below`,
+        };
+    const summarySelector = '[data-test-selector="community-points-summary"]';
+    let channelPath;
+    let counter;
+    let dialog;
+    let pending;
 
     GM_addStyle(`
-      #total-got-points {
-        display: inline-flex;
-        position: relative;
-        align-items: center;
-        padding : 0 var(--button-padding-x) 0 var(--button-padding-x);
-        text-decoration: none;
-        white-space: nowrap;
-        user-select: none;
-        color: var(--color-text-alt-2);
-        font-weight: var(--font-weight-semibold);
-        border-radius: var(--border-radius-medium);
-        font-size: var(--button-text-default);
-        height: var(--button-size-default);
-        --point-name: '自動領取忠誠點數';
-      }
-
-      #total-got-points:hover {
-        background-color: var(--color-background-button-text-hover);
-      }
-
-      #total-got-points img {
-        height: 2rem;
-        width: 2rem;
-      }
-
-      #total-got-points img, #total-got-points svg {
-        margin-right: 5px;
-      }
-
-      #total-got-points::before{
-        content: var(--point-name);
-        user-select: none;
-        color: var(--color-text-tooltip);
-        background-color: var(--color-background-tooltip);
-        font-size: var(--font-size-6);
-        border-radius: 0.4rem;
-        padding: 0.5rem;
-        width: max-content;
-        max-width: min(18rem, 70vw);
-        overflow-wrap: anywhere;
-        font-weight: var(--font-weight-semibold);
-        right: 0;
-        line-height: 1.2;
-        pointer-events: none;
-        position: absolute;
-        text-align: left;
-        white-space: normal;
-        z-index: 2000;
-        bottom: calc(100% + 5px);
-        transition: all .2s ease-in-out;
-        opacity: 0;
-      }
-
-      #total-got-points:hover::before{
-        opacity: 1;
-      }
+        #total-got-points {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            height: var(--button-size-default, 3rem);
+            padding: 0 var(--button-padding-x, .8rem);
+            border-radius: var(--border-radius-medium, .4rem);
+            color: var(--color-text-alt-2, #dedee3);
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        #total-got-points:hover, #total-got-points:focus-visible {
+            background: var(--color-background-button-text-hover, #34343b);
+        }
+        #total-got-points img, #total-got-points svg { width: 2rem; height: 2rem; }
+        #total-got-points:hover::before, #total-got-points:focus-visible::before {
+            content: var(--point-name);
+            position: absolute;
+            right: 0;
+            bottom: calc(100% + 5px);
+            z-index: 2000;
+            pointer-events: none;
+            width: max-content;
+            max-width: min(18rem, 70vw);
+            white-space: normal;
+            overflow-wrap: anywhere;
+            padding: .5rem;
+            border-radius: .4rem;
+            color: var(--color-text-tooltip, #0e0e10);
+            background: var(--color-background-tooltip, #fff);
+        }
+        #auto-points-history {
+            box-sizing: border-box;
+            width: min(36rem, calc(100vw - 2rem));
+            max-height: calc(100dvh - 2rem);
+            margin: auto;
+            overflow: auto;
+            padding: 1.6rem;
+            border: 1px solid var(--color-border-base, #48484d);
+            border-radius: .8rem;
+            color: var(--color-text-base, #efeff1);
+            background: var(--color-background-base, #18181b);
+        }
+        #auto-points-history::backdrop { background: rgb(0 0 0 / 55%); }
+        #auto-points-history header, #auto-points-history li {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: .8rem;
+        }
+        #auto-points-history header button { cursor: pointer; padding: .4rem .8rem; }
+        #auto-points-history p { margin: .6rem 0; }
+        #auto-points-history .claim-total {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        #auto-points-history .claim-total img,
+        #auto-points-history .claim-total svg {
+            width: 2rem;
+            height: 2rem;
+            flex-shrink: 0;
+        }
+        #auto-points-history .unlisted-points {
+            color: var(--color-text-alt-2, #adadb8);
+            font-size: .875em;
+            opacity: .7;
+        }
+        #auto-points-history ol { list-style: none; padding: 0; }
+        #auto-points-history li { padding: .6rem 0; }
     `);
 
-    const ignorePathNames = [
-        '/directory',
-    ]
-    const isPathIgnored = (pathname) => ignorePathNames.some(ignoredPath => pathname.startsWith(ignoredPath));
-
-    // find button
-    let findButtonRetry = 100;
-    // get points
-    const getPointsLoopMs = 1000;
-    const gotPointsRegex = /\+?(\d+)/;
-    let lastTimeGotPoints = null;
-    let needToUpdateGotPoints = false;
-
-    const startGetPointsLoop = () => {
-        const GMkeyName = location.origin + location.pathname + ':auto-channel-points';
-        let totalGotPoints = GM_getValue(GMkeyName, 0);
-        showTotalGotPoints(totalGotPoints);
-        window.getPointLoop = setInterval(function () {
-            const $pointsSummaryButtons = document.querySelectorAll('[data-test-selector="community-points-summary"] button');
-            const canGetPoints = $pointsSummaryButtons.length > 1;
-            const $gotPointsEles = document.querySelectorAll('.pulse-animation');
-
-            if (canGetPoints) {
-                $pointsSummaryButtons[1].click();
-                $pointsSummaryButtons[1].remove();
-                console.log('[Twitch-Auto-Channel-Points] Getting points...');
-
-                needToUpdateGotPoints = true;
-            }
-
-            if (needToUpdateGotPoints) {
-                $gotPointsEles.forEach(($gotPointsEle) => {
-                    const matches = $gotPointsEle.textContent.match(gotPointsRegex);
-                    if (!matches) return;
-
-                    lastTimeGotPoints = parseInt(matches[1]);
-                });
-
-                if (!lastTimeGotPoints) return;
-
-                totalGotPoints += lastTimeGotPoints;
-                GM_setValue(GMkeyName, totalGotPoints);
-                console.log("[Twitch-Auto-Channel-Points] Got points: ", lastTimeGotPoints);
-                showTotalGotPoints(totalGotPoints);
-
-                lastTimeGotPoints = null;
-                needToUpdateGotPoints = false;
-            }
-        }, getPointsLoopMs);
-    }
-    const stopGetPointsLoop = () => {
-        if (!window.getPointLoop) return;
-        clearInterval(window.getPointLoop);
-        window.getPointLoop = null;
+    function appendText(parent, tag, text) {
+        const element = document.createElement(tag);
+        element.textContent = text;
+        parent.append(element);
+        return element;
     }
 
-    const appendGotPointsElement = () => {
-        const $totalGotPointsContainer = document.createElement('div');
-        $totalGotPointsContainer.id = 'total-got-points';
-        const $buttonDiv = document.querySelectorAll('.chat-input__buttons-container div')[0];
-        $buttonDiv.appendChild($totalGotPointsContainer);
-        const pointButton = document.querySelector('[data-test-selector="community-points-summary"] button');
-        const pointImage = pointButton?.querySelector('img');
-        const sourceIcon = pointImage ?? pointButton?.querySelector('svg');
-        const pointName = pointImage?.alt || (isChinese ? '忠誠點數' : 'Channel Points');
-        $totalGotPointsContainer.dataset.pointLabel = isChinese ? '自動領取' + pointName : 'Auto-claimed ' + pointName;
-        if (sourceIcon) {
-            const icon = sourceIcon.cloneNode(true);
-            icon.setAttribute('aria-hidden', 'true');
-            if (pointImage) {
-                icon.alt = '';
+    function renderHistory(history, total) {
+        const content = dialog.querySelector('section');
+        content.replaceChildren();
+        const totalLine = document.createElement('p');
+        totalLine.className = 'claim-total';
+        content.append(totalLine);
+        if (counter?.icon) totalLine.append(counter.icon.cloneNode(true));
+        appendText(totalLine, 'strong', strings.total(total));
+
+        const unlisted = total - history.reduce((sum, entry) => sum + entry.points, 0);
+        if (unlisted > 0) {
+            appendText(content, 'p', strings.unlisted(unlisted)).className = 'unlisted-points';
+        }
+
+        if (!history.length) {
+            appendText(content, 'p', strings.empty);
+            return;
+        }
+
+        const list = document.createElement('ol');
+        content.append(list);
+        for (const entry of history) {
+            const row = document.createElement('li');
+            list.append(row);
+            const date = new Date(entry.timestamp);
+            const time = appendText(row, 'time', dateFormat.format(date));
+            time.setAttribute('datetime', date.toISOString());
+            appendText(row, 'strong', '+' + numberFormat.format(entry.points));
+        }
+    }
+
+    function openHistory(totalKey, historyKey) {
+        if (!dialog) {
+            dialog = document.createElement('dialog');
+            dialog.id = 'auto-points-history';
+            dialog.setAttribute('aria-labelledby', 'auto-points-history-title');
+            const header = document.createElement('header');
+            dialog.append(header, document.createElement('section'));
+            const title = appendText(header, 'h2', strings.title);
+            title.id = 'auto-points-history-title';
+            const close = appendText(header, 'button', strings.close);
+            close.type = 'button';
+            close.addEventListener('click', () => dialog.close());
+            document.body.append(dialog);
+        }
+        renderHistory(GM_getValue(historyKey, []), GM_getValue(totalKey, 0));
+        if (!dialog.open) dialog.showModal();
+    }
+
+    function createCounter(host, balanceButton, totalKey, historyKey) {
+        const element = document.createElement('button');
+        element.id = 'total-got-points';
+        element.type = 'button';
+        element.setAttribute('aria-haspopup', 'dialog');
+        const image = balanceButton.querySelector('img');
+        const icon = image ?? balanceButton.querySelector('svg');
+        let copy;
+        if (icon) {
+            copy = icon.cloneNode(true);
+            copy.setAttribute('aria-hidden', 'true');
+            if (image) {
+                copy.alt = '';
             } else {
-                const style = getComputedStyle(sourceIcon);
-                icon.style.color = style.color;
-                icon.style.fill = style.fill;
+                const style = getComputedStyle(icon);
+                copy.style.color = style.color;
+                copy.style.fill = style.fill;
             }
-            $totalGotPointsContainer.appendChild(icon);
+            element.append(copy);
         }
-        $totalGotPointsContainer.appendChild(document.createElement('span'));
+        const count = appendText(element, 'span', '');
+        element.addEventListener('click', () => openHistory(totalKey, historyKey));
+        host.append(element);
+        return { element, count, balanceButton, icon: copy, name: image?.alt || strings.points };
+    }
 
-        return document.querySelector('#total-got-points span');
-    };
+    function readPoints(element) {
+        const match = element.textContent.match(/\+\s*([\d,]+)/);
+        return match ? Number(match[1].replace(/,/g, '')) : 0;
+    }
 
-    const showTotalGotPoints = function (totalGotPoints) {
-        let $gotPointsEle = document.querySelector('#total-got-points span');
-        if (!$gotPointsEle) {
-            $gotPointsEle = appendGotPointsElement();
+    function update() {
+        if (location.pathname !== channelPath) {
+            channelPath = location.pathname;
+            counter?.element.remove();
+            if (dialog?.open) dialog.close();
+            counter = null;
+            pending = null;
         }
-        const fullNumber = fullFormatter.format(totalGotPoints);
-        const threshold = isChinese ? 10000 : 1000;
-        $gotPointsEle.textContent = totalGotPoints < threshold ? fullNumber : compactFormatter.format(totalGotPoints);
-        const container = $gotPointsEle.parentElement;
-        const label = container.dataset.pointLabel + (isChinese ? '：' : ': ') + fullNumber;
-        container.style.setProperty('--point-name', JSON.stringify(label));
-        console.log("[Twitch-Auto-Channel-Points] totalGotPoints: ", totalGotPoints);
-    };
+        if (channelPath.startsWith('/directory')) return;
 
-    const startFindPointButtonLoop = () => {
-        window.findPointButtonLoop = setInterval(function () {
-            console.log('[Twitch-Auto-Channel-Points] find point-button...');
-            let $pointButton = document.querySelector('[data-test-selector="community-points-summary"] button');
-            if ($pointButton) {
-                startGetPointsLoop();
-                stopFindPointButtonLoop();
-                console.log("[Twitch-Auto-Channel-Points] found point-button. start auto get points");
-            } else if (!findButtonRetry) {
-                stopFindPointButtonLoop();
-                console.warn("[Twitch-Auto-Channel-Points] point-button not found.");
+        const summary = document.querySelector(summarySelector);
+        const bonusIcon = summary?.querySelector('[data-test-selector="claimable-bonus__icon"]')
+            ?? summary?.querySelector('.claimable-bonus__icon');
+        const bonus = bonusIcon?.closest('button');
+        const balance = Array.from(summary?.querySelectorAll('button') ?? [])
+            .find((button) => button !== bonus);
+        const host = summary?.closest('.chat-input__buttons-container')?.querySelector('div');
+        if (!balance || !host) return;
+
+        const totalKey = location.origin + channelPath + ':auto-channel-points';
+        const historyKey = totalKey + ':history';
+        if (counter?.element.parentElement !== host || counter.balanceButton !== balance) {
+            counter?.element.remove();
+            counter = createCounter(host, balance, totalKey, historyKey);
+        }
+
+        let total = GM_getValue(totalKey, 0);
+        const animations = summary.querySelectorAll('.pulse-animation');
+        if (pending && Date.now() >= pending.deadline) pending = null;
+        if (pending) {
+            for (const animation of animations) {
+                const points = readPoints(animation);
+                if (!points || pending.previous.get(animation) === points) continue;
+
+                pending = null;
+                total += points;
+                const history = [{ timestamp: Date.now(), points }, ...GM_getValue(historyKey, [])].slice(0, 100);
+                GM_setValue(totalKey, total);
+                GM_setValue(historyKey, history);
+                if (dialog?.open) renderHistory(history, total);
+                break;
             }
-            findButtonRetry--;
-        }, 500);
-    };
-    const stopFindPointButtonLoop = () => {
-        if (!window.findPointButtonLoop) return;
-        clearInterval(window.findPointButtonLoop);
-        window.findPointButtonLoop = null;
+        }
+
+        if (counter.total !== total) {
+            counter.total = total;
+            const formatted = numberFormat.format(total);
+            counter.count.textContent = total < (isChinese ? 10000 : 1000)
+                ? formatted : compactFormat.format(total);
+            const label = strings.prefix + counter.name + (isChinese ? '：' : ': ') + formatted;
+            counter.element.style.setProperty('--point-name', JSON.stringify(label));
+            counter.element.setAttribute('aria-label', label);
+        }
+
+        if (!pending && bonus && !bonus.disabled) {
+            pending = {
+                deadline: Date.now() + 5000,
+                previous: new Map(Array.from(animations, (element) => [element, readPoints(element)])),
+            };
+            bonus.click();
+        }
     }
 
-    const handlePageLoaded = (pathname) => {
-        if (isPathIgnored(pathname)) return;
-        startFindPointButtonLoop();
-    }
-    const handlePageChanged = () => {
-        window.navigation.addEventListener("navigate", (event) => {
-            stopFindPointButtonLoop();
-            stopGetPointsLoop();
-
-            const url = new URL(event.destination.url);
-            handlePageLoaded(url.pathname);
-        });
-    }
-
-    const main = () => {
-        handlePageLoaded(location.pathname);
-        handlePageChanged();
-    }
-    main();
+    update();
+    window.setInterval(update, 250);
 })();
