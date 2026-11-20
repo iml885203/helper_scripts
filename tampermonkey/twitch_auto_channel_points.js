@@ -2,7 +2,7 @@
 // @name               Twitch - Auto Channel Points
 // @name:zh-TW         Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            2024.5.1
+// @version            2026.11.1
 // @description        Automatically claim channel points
 // @description:zh-tw  自動獲得忠誠點數
 // @author             Long
@@ -17,6 +17,15 @@
 
 (function () {
     "use strict";
+
+    const isChinese = /^zh\b/i.test(document.documentElement.lang || navigator.language);
+    const locale = isChinese ? 'zh-TW' : 'en-US';
+    const fullFormatter = new Intl.NumberFormat(locale);
+    const compactFormatter = new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        maximumFractionDigits: 1,
+        roundingMode: 'floor',
+    });
 
     GM_addStyle(`
       #total-got-points {
@@ -56,17 +65,18 @@
         font-size: var(--font-size-6);
         border-radius: 0.4rem;
         padding: 0.5rem;
-        max-width: 30rem;
+        width: max-content;
+        max-width: min(18rem, 70vw);
+        overflow-wrap: anywhere;
         font-weight: var(--font-weight-semibold);
         right: 0;
         line-height: 1.2;
         pointer-events: none;
         position: absolute;
         text-align: left;
-        white-space: nowrap;
+        white-space: normal;
         z-index: 2000;
-        top: 50%;
-        transform: translate(calc(100% + 5px), -50%);
+        bottom: calc(100% + 5px);
         transition: all .2s ease-in-out;
         opacity: 0;
       }
@@ -137,15 +147,22 @@
         $totalGotPointsContainer.id = 'total-got-points';
         const $buttonDiv = document.querySelectorAll('.chat-input__buttons-container div')[0];
         $buttonDiv.appendChild($totalGotPointsContainer);
-        const $pointImage = document.querySelector('.channel-points-icon__image');
-        if ($pointImage) {
-            const pointName = $pointImage.alt;
-            $totalGotPointsContainer.style.setProperty('--point-name', '"自動領取' + pointName + '"');
-            $totalGotPointsContainer.appendChild($pointImage.cloneNode(true));
-        } else {
-            $totalGotPointsContainer
-                .appendChild(document.querySelector('.chat-input__buttons-container button svg')
-                    .cloneNode(true));
+        const pointButton = document.querySelector('[data-test-selector="community-points-summary"] button');
+        const pointImage = pointButton?.querySelector('img');
+        const sourceIcon = pointImage ?? pointButton?.querySelector('svg');
+        const pointName = pointImage?.alt || (isChinese ? '忠誠點數' : 'Channel Points');
+        $totalGotPointsContainer.dataset.pointLabel = isChinese ? '自動領取' + pointName : 'Auto-claimed ' + pointName;
+        if (sourceIcon) {
+            const icon = sourceIcon.cloneNode(true);
+            icon.setAttribute('aria-hidden', 'true');
+            if (pointImage) {
+                icon.alt = '';
+            } else {
+                const style = getComputedStyle(sourceIcon);
+                icon.style.color = style.color;
+                icon.style.fill = style.fill;
+            }
+            $totalGotPointsContainer.appendChild(icon);
         }
         $totalGotPointsContainer.appendChild(document.createElement('span'));
 
@@ -157,7 +174,12 @@
         if (!$gotPointsEle) {
             $gotPointsEle = appendGotPointsElement();
         }
-        $gotPointsEle.textContent = new Intl.NumberFormat().format(totalGotPoints);
+        const fullNumber = fullFormatter.format(totalGotPoints);
+        const threshold = isChinese ? 10000 : 1000;
+        $gotPointsEle.textContent = totalGotPoints < threshold ? fullNumber : compactFormatter.format(totalGotPoints);
+        const container = $gotPointsEle.parentElement;
+        const label = container.dataset.pointLabel + (isChinese ? '：' : ': ') + fullNumber;
+        container.style.setProperty('--point-name', JSON.stringify(label));
         console.log("[Twitch-Auto-Channel-Points] totalGotPoints: ", totalGotPoints);
     };
 
