@@ -2,7 +2,7 @@
 // @name               Twitch - Auto Channel Points
 // @name:zh-TW         Twitch - 自動獲得忠誠點數
 // @namespace          http://tampermonkey.net/
-// @version            2026.11.2
+// @version            2026.11.3
 // @description        Automatically claim channel points
 // @description:zh-TW  自動獲得忠誠點數
 // @author             Long
@@ -178,30 +178,41 @@
         if (!dialog.open) dialog.showModal();
     }
 
-    function createCounter(host, balanceButton, totalKey, historyKey) {
+    function createCounter(host, totalKey, historyKey) {
         const element = document.createElement('button');
         element.id = 'total-got-points';
         element.type = 'button';
         element.setAttribute('aria-haspopup', 'dialog');
-        const image = balanceButton.querySelector('img');
-        const icon = image ?? balanceButton.querySelector('svg');
-        let copy;
-        if (icon) {
-            copy = icon.cloneNode(true);
-            copy.setAttribute('aria-hidden', 'true');
-            if (image) {
-                copy.alt = '';
-            } else {
-                const style = getComputedStyle(icon);
-                copy.style.color = style.color;
-                copy.style.fill = style.fill;
-            }
-            element.append(copy);
-        }
         const count = appendText(element, 'span', '');
         element.addEventListener('click', () => openHistory(totalKey, historyKey));
         host.append(element);
-        return { element, count, balanceButton, icon: copy, name: image?.alt || strings.points };
+        return { element, count, name: strings.points };
+    }
+
+    function syncCounterIcon(balance) {
+        const iconContainer = balance?.previousElementSibling;
+        const image = iconContainer?.querySelector('img');
+        const source = image ?? iconContainer?.querySelector('svg');
+        const markup = source?.outerHTML;
+        if (counter.iconSource === source && counter.iconMarkup === markup) return false;
+
+        counter.icon?.remove();
+        counter.iconSource = source;
+        counter.iconMarkup = markup;
+        counter.icon = source?.cloneNode(true);
+        counter.name = image?.alt || strings.points;
+        if (counter.icon) {
+            counter.icon.setAttribute('aria-hidden', 'true');
+            if (image) {
+                counter.icon.alt = '';
+            } else {
+                const style = getComputedStyle(source);
+                counter.icon.style.color = style.color;
+                counter.icon.style.fill = style.fill;
+            }
+            counter.element.insertBefore(counter.icon, counter.count);
+        }
+        return true;
     }
 
     function readPoints(element) {
@@ -223,19 +234,29 @@
         const bonusIcon = summary?.querySelector('[data-test-selector="claimable-bonus__icon"]')
             ?? summary?.querySelector('.claimable-bonus__icon');
         const bonus = bonusIcon?.closest('button');
-        const balance = Array.from(summary?.querySelectorAll('button') ?? [])
-            .find((button) => button !== bonus);
+        const balance = summary?.querySelector('[data-test-selector="copo-balance-string"]');
         const host = summary?.closest('.chat-input__buttons-container')?.querySelector('div');
-        if (!balance || !host) return;
+        if (!host) return;
 
         const totalKey = location.origin + channelPath + ':auto-channel-points';
         const historyKey = totalKey + ':history';
-        if (counter?.element.parentElement !== host || counter.balanceButton !== balance) {
+        if (counter?.element.parentElement !== host) {
             counter?.element.remove();
-            counter = createCounter(host, balance, totalKey, historyKey);
+            counter = createCounter(host, totalKey, historyKey);
         }
 
         let total = GM_getValue(totalKey, 0);
+        const nativeButton = balance?.closest('button');
+        if (nativeButton) {
+            const radius = getComputedStyle(nativeButton).borderRadius;
+            if (counter.element.style.borderRadius !== radius) {
+                counter.element.style.borderRadius = radius;
+            }
+        } else if (counter.element.style.borderRadius) {
+            counter.element.style.borderRadius = '';
+        }
+        const iconChanged = syncCounterIcon(balance);
+        if (iconChanged && dialog?.open) renderHistory(GM_getValue(historyKey, []), total);
         const animations = summary.querySelectorAll('.pulse-animation');
         if (pending && Date.now() >= pending.deadline) pending = null;
         if (pending) {
@@ -253,7 +274,7 @@
             }
         }
 
-        if (counter.total !== total) {
+        if (counter.total !== total || iconChanged) {
             counter.total = total;
             const formatted = numberFormat.format(total);
             counter.count.textContent = total < (isChinese ? 10000 : 1000)
